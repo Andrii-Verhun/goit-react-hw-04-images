@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useEffect, useState } from "react";
 import Notiflix from 'notiflix';
 
 import fetchImage from '../api/fetchImage';
@@ -9,111 +9,78 @@ import { Button } from './Button/Button';
 import { Loader } from "./Loader/Loader";
 import { ModalComponent } from "./Modal/Modal";
 
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    totalHits: null,
-    page: 1,
-    isLoading: false,
-    showModal: false,
-    modalImg: {
-      src: '',
-      alt: '',
-    },
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [modalImg, setModalImg] = useState({ src: '', alt: '' });
+  const [showModal, setShowModal] = useState(false);
 
-  componentDidUpdate = async (_prevProps, prevState) => {
-    const { query, page } = this.state;
-    if (prevState.query !== this.state.query) {
+  useEffect(() => {
+    (async () => {
+      if (query === '') return;
       try {
-        const { data } = await fetchImage(query);
-        this.setState({
-          images: data.hits,
-          totalHits: data.totalHits,
-          isLoading: false,
-        });
-        Notiflix.Notify.success(`${data.totalHits} results found for your query.`);
+        const { data: { hits, totalHits } } = await fetchImage(query, page);
+        const moreImages = [...images, ...hits];
+        setImages(moreImages);
+        setIsLoading(false);
+        if (page === 1) { Notiflix.Notify.success(`${totalHits} results found for your query.`) };
       } catch (error) {
         console.log(error);
-      };
-    };
+      }
+    })();
+  }, [query, page]);
 
-    if ((prevState.page !== page) && (prevState.query === query)) {
-      try {
-        const { data: { hits } } = await fetchImage(query, page);
-        this.setState((state) => {
-          return {
-            images: [...state.images, ...hits],
-            isLoading: false,
-          };
-        });
-      } catch (error) {
-          console.log(error);
-        }
-    };
+  useEffect(() => {
+    setTimeout(() => {
+      window.scrollBy({
+        top: window.innerHeight,
+        behavior: "smooth",
+      });
+    }, 1000);
+  }, [images]);
 
-    if (this.state.images.length !== prevState.images.length) {
-      setTimeout(() => {
-        window.scrollBy({
-          top: window.innerHeight,
-          behavior: "smooth",
-        });
-      }, 1000);
-    };
-  };
-
-  handleOnSubmit = (evt) => {
+  const handleOnSubmit = (evt) => {
     evt.preventDefault();
-    const { query } = evt.target;
-    if (this.state.query !== query.value) {
-      this.setState({ query: query.value, page: 1, isLoading: true });
+    const { query: { value } } = evt.target;
+    if (query !== value) {
+      setImages([]);
+      setQuery(value);
+      setPage(1);
+      setIsLoading(true);
       return;
     };
     Notiflix.Notify.info('You have already found images for this request');
   };
 
-  handleLoadMore = () => {
-    this.setState((state) => {
-      return {
-        page: (state.page + 1),
-        isLoading: true,
-      };
-    });
-    
+  const handleLoadMore = () => {
+    setPage(page + 1);
+    setIsLoading(true);
   };
 
-  handleOpenModal = ({target: {id}}) => {
-    const indexImg = this.state.images.findIndex((el) => el.id === Number(id));
-    this.setState((state) => {
-      return {
-        showModal: true,
-        modalImg: {
-          src: state.images[indexImg].largeImageURL,
-          alt: state.images[indexImg].tags,
-        },
-      };
-    });
+  const handleOpenModal = ({ target: { id } }) => {
+    const indexImg = images.findIndex((el) => el.id === Number(id));
+    setModalImg({ src: images[indexImg].largeImageURL, alt: images[indexImg].tags });
+    setShowModal(true);
   };
 
-  handleCloseModal = () => {
-    this.setState({ showModal: false });
+  const handleCloseModal = () => {
+    setShowModal(false);
   };
 
-  render() {
-    return (
-      <>
-        <Searchbar submit={this.handleOnSubmit} />
-        {this.state.images && <ImageGallery images={this.state.images} onClick={this.handleOpenModal} />}
-        <Loader isLoading={this.state.isLoading} />
-        {(this.state.images.length !== 0) && <Button loadMore={this.handleLoadMore} />}
-        <ModalComponent
-          showModal={this.state.showModal}
-          onRequestClose={this.handleCloseModal}
-          imgLink={this.state.modalImg.src}
-          alt={this.state.modalImg.alt}
-        />
-      </>
-    );
-  };
+  return (
+    <>
+      <Searchbar submit={handleOnSubmit} />
+      {images && <ImageGallery images={images} onClick={handleOpenModal} />}
+      <Loader isLoading={isLoading} />
+      {(images.length !== 0) && <Button loadMore={handleLoadMore} />}
+      <ModalComponent
+        showModal={showModal}
+        onRequestClose={handleCloseModal}
+        imgLink={modalImg.src}
+        alt={modalImg.alt}
+      />
+    </>
+  );
 };
