@@ -28,7 +28,7 @@ export const App = () => {
       } catch (error) {
         console.log(error);
       }
-    })();
+    })();// eslint-disable-next-line
   }, [query, page]);
 
   useEffect(() => {
