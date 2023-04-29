@@ -19,7 +19,7 @@ export const App = () => {
 
   useEffect(() => {
     (async () => {
-      if (query === '') return;
+      if ((query === '') || !isLoading) return;
       try {
         const { data: { hits, totalHits } } = await fetchImage(query, page);
         setImages([...images, ...hits]);
@@ -28,8 +28,8 @@ export const App = () => {
       } catch (error) {
         console.log(error);
       }
-    })();// eslint-disable-next-line
-  }, [query, page]);
+    })();
+  }, [query, page, images]);
 
   useEffect(() => {
     setTimeout(() => {
