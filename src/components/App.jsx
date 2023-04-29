@@ -29,7 +29,7 @@ export const App = () => {
         console.log(error);
       }
     })();
-  }, [query, page, images]);
+  }, [query, page, images, isLoading]);
 
   useEffect(() => {
     setTimeout(() => {
