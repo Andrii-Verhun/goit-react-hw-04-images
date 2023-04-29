@@ -22,8 +22,7 @@ export const App = () => {
       if (query === '') return;
       try {
         const { data: { hits, totalHits } } = await fetchImage(query, page);
-        const moreImages = [...images, ...hits];
-        setImages(moreImages);
+        setImages([...images, ...hits]);
         setIsLoading(false);
         if (page === 1) { Notiflix.Notify.success(`${totalHits} results found for your query.`) };
       } catch (error) {
